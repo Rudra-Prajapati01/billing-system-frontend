@@ -12,7 +12,6 @@
   "dependencies": {
     "apexcharts": "^5.15.0",
     "axios": "^1.18.0",
-    "bcrypt": "^6.0.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
