@@ -5,9 +5,17 @@ import autoTable from "jspdf-autotable";
 const loadImageAsBase64 = (url) => {
   return new Promise((resolve) => {
     if (!url) return resolve(null);
-    const fullUrl = url.startsWith("http://") || url.startsWith("https://") 
-      ? url 
-      : `http://localhost:5000${url}`;
+
+    // Dynamic URL Fix for Local vs Live Environment
+    const baseUrl =
+      import.meta.env.VITE_API_URL?.replace("/api", "") ||
+      "https://slateblue-leopard-690725.hostingersite.com";
+
+    const fullUrl = url.startsWith("http://") || url.startsWith("https://")
+      ? url
+      : `${baseUrl}${url}`;
+
+    console.log("FULL IMAGE URL:", fullUrl);
 
     const img = new Image();
     img.crossOrigin = "Anonymous";
@@ -65,14 +73,14 @@ const drawHeader = (doc, title, docNo, companyInfo, logoObj) => {
   doc.setFillColor(...COLORS.primary);
   doc.rect(0, 0, 210, 4, "F");
 
-  let currentY = 18; // tightened from 22
+  let currentY = 18; 
 
   const rightAlignX = 195;
 
   // Left: INVOICE / QUOTATION Title
   doc.setTextColor(...COLORS.primary);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(22); // tightened from 26
+  doc.setFontSize(22); 
   doc.text(`${title.toUpperCase()}`, 15, currentY + 6);
   
   doc.setTextColor(...COLORS.textMuted);
@@ -83,7 +91,7 @@ const drawHeader = (doc, title, docNo, companyInfo, logoObj) => {
   if (logoObj && logoObj.data) {
     try {
       const ratio = logoObj.width / logoObj.height;
-      let targetHeight = 14; // tightened from 16
+      let targetHeight = 14; 
       let targetWidth = targetHeight * ratio;
 
       if (targetWidth > 55) {
@@ -100,7 +108,7 @@ const drawHeader = (doc, title, docNo, companyInfo, logoObj) => {
   }
 
   // ==========================================
-  // Right: Company Details (MODIFIED SECTION)
+  // Right: Company Details
   // ==========================================
   
   // Company Name
@@ -120,11 +128,8 @@ const drawHeader = (doc, title, docNo, companyInfo, logoObj) => {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(...COLORS.textMuted);
-  // ==========================================
 
-  // Strip a leading "Company Name," from the stored address (some records
-  // save the company name as part of the address string), so it doesn't
-  // print twice — once as the bold header, once inside the address block.
+  // Strip a leading "Company Name," from the stored address 
   const companyNameForCheck = (companyInfo?.company_name || "").trim().toLowerCase();
   let cleanAddress = (companyInfo?.address || "").trim();
   if (companyNameForCheck && cleanAddress.toLowerCase().startsWith(companyNameForCheck)) {
@@ -138,7 +143,7 @@ const drawHeader = (doc, title, docNo, companyInfo, logoObj) => {
     );
     addrLines.forEach(line => {
       doc.text(line, rightAlignX, detailsY, { align: "right" });
-      detailsY += 3.5; // tightened from 4
+      detailsY += 3.5; 
     });
   }
 
@@ -168,7 +173,7 @@ const drawHeader = (doc, title, docNo, companyInfo, logoObj) => {
   doc.setLineWidth(0.5);
   doc.line(15, headerMaxY + 3, 195, headerMaxY + 3);
 
-  return headerMaxY + 10; // tightened from +15
+  return headerMaxY + 10; 
 };
 
 // Layout: 2. Invoiced To & Colored Meta Table
@@ -184,7 +189,7 @@ const drawBillingAndSummary = (doc, yStart, isInvoice, docNo, docDate, grandTota
 
   doc.setTextColor(...COLORS.textMain);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(10.5); // tightened from 11
+  doc.setFontSize(10.5); 
   doc.text(primaryName, 15, yStart + 5.5);
 
   doc.setFont("helvetica", "normal");
@@ -194,13 +199,13 @@ const drawBillingAndSummary = (doc, yStart, isInvoice, docNo, docDate, grandTota
     doc.text(`Attn: ${attnName}`, 15, yStart + 10);
   }
 
-  let addressY = yStart + 14.5; // tightened from +16
+  let addressY = yStart + 14.5; 
   const custAddress = customer?.address || customer?.billing_address || customer?.customer_address;
   if (custAddress) {
     const addrLines = doc.splitTextToSize(custAddress, 80);
     addrLines.forEach(line => {
       doc.text(line, 15, addressY);
-      addressY += 3.8; // tightened from 4
+      addressY += 3.8; 
     });
   }
 
@@ -242,7 +247,7 @@ const drawBillingAndSummary = (doc, yStart, isInvoice, docNo, docDate, grandTota
   const metaX = 120;
   const col1Width = 32;
   const col2Width = 43;
-  const rowHeight = 7; // tightened from 7.5
+  const rowHeight = 7; 
   let metaY = yStart - 4;
 
   const formattedDate = new Date(docDate).toLocaleDateString("en-IN", {
@@ -292,7 +297,7 @@ const drawBillingAndSummary = (doc, yStart, isInvoice, docNo, docDate, grandTota
     metaY += isAmountRow ? rowHeight + 1.5 : rowHeight;
   });
 
-  return Math.max(addressY + 6, metaY + 6); // tightened from +8
+  return Math.max(addressY + 6, metaY + 6); 
 };
 
 // Layout: 3. Bank Details, Terms & Totals
@@ -303,7 +308,7 @@ const drawFooterBlocks = (doc, yStart, subtotal, gstAmount, grandTotal, bank, te
   const totalsX = 120;
   const col1Width = 32;
   const col2Width = 43;
-  const rowHeight = 6.5; // tightened from 8
+  const rowHeight = 6.5; 
   let totalY = currentY;
 
   const totals = [
@@ -353,10 +358,10 @@ const drawFooterBlocks = (doc, yStart, subtotal, gstAmount, grandTotal, bank, te
     doc.text("BANK PAYMENT DETAILS", 15, leftY + 4);
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.5); // tightened from 8.5
+    doc.setFontSize(7.5); 
     doc.setTextColor(...COLORS.textMain);
     
-    let bankY = leftY + 8.5; // tightened from +10
+    let bankY = leftY + 8.5; 
     if (bank.bank_name) { doc.text(`Bank Name: ${bank.bank_name}`, 15, bankY); bankY += 3.8; }
     if (bank.account_holder_name) { doc.text(`Account Holder: ${bank.account_holder_name}`, 15, bankY); bankY += 3.8; }
     if (bank.account_number) { doc.text(`Account No: ${bank.account_number}   |   IFSC: ${bank.ifsc_code || '-'}`, 15, bankY); bankY += 3.8; }
@@ -372,11 +377,11 @@ const drawFooterBlocks = (doc, yStart, subtotal, gstAmount, grandTotal, bank, te
     doc.text("TERMS & CONDITIONS", 15, leftY + 4);
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(7); // tightened from 8
+    doc.setFontSize(7); 
     doc.setTextColor(...COLORS.textMuted);
 
     const termLines = term.description.split("\n").filter(l => l.trim().length > 0);
-    let lineY = leftY + 8; // tightened from +10
+    let lineY = leftY + 8; 
     termLines.forEach((line, index) => {
       const prefix = `${index + 1}. `;
       const lineText = line.trim().startsWith(index + 1) || line.trim().startsWith("-") 
@@ -386,7 +391,7 @@ const drawFooterBlocks = (doc, yStart, subtotal, gstAmount, grandTotal, bank, te
       const wrapped = doc.splitTextToSize(lineText, 100);
       wrapped.forEach(wl => {
         doc.text(wl, 15, lineY);
-        lineY += 3.4; // tightened from 4
+        lineY += 3.4; 
       });
     });
     leftY = lineY;
@@ -396,7 +401,7 @@ const drawFooterBlocks = (doc, yStart, subtotal, gstAmount, grandTotal, bank, te
   let sigY = Math.max(totalY, leftY) + 8;
   if (signatureObj && signatureObj.data) {
     const sigRatio = signatureObj.width / signatureObj.height;
-    const sigHeight = 11; // tightened from 14
+    const sigHeight = 11; 
     const sigWidth = sigHeight * sigRatio;
     doc.addImage(signatureObj.data, "PNG", totalsX + col1Width + col2Width - sigWidth, sigY, sigWidth, sigHeight);
     sigY += sigHeight + 3;
@@ -409,7 +414,7 @@ const drawFooterBlocks = (doc, yStart, subtotal, gstAmount, grandTotal, bank, te
   doc.setTextColor(...COLORS.textMain);
   doc.text("Authorized Signatory", totalsX + col1Width + col2Width, sigY, { align: "right" });
 
-  return sigY + 6; // return final Y so caller knows total content height
+  return sigY + 6; 
 };
 
 // Watermark Function
@@ -470,7 +475,7 @@ const drawItemsAndPayments = (doc, startY, items, payments) => {
     alternateRowStyles: { fillColor: COLORS.primaryLight },
     bodyStyles: { lineColor: COLORS.borderLight, lineWidth: 0.1, textColor: COLORS.textMain, valign: "top" },
     columnStyles: { 0: { cellWidth: 95 }, 1: { halign: "left", cellWidth: 30 }, 2: { halign: "center", cellWidth: 15 }, 3: { halign: "left", cellWidth: 40 } },
-    styles: { fontSize: 8, cellPadding: 3.5 }, // tightened cellPadding from 5
+    styles: { fontSize: 8, cellPadding: 3.5 }, 
     margin: { left: 15, right: 15 }
   });
 
@@ -495,7 +500,7 @@ const drawItemsAndPayments = (doc, startY, items, payments) => {
       theme: "plain",
       headStyles: { fillColor: COLORS.primaryLight, textColor: COLORS.primary, fontSize: 8, fontStyle: "bold" },
       bodyStyles: { textColor: COLORS.textMain },
-      styles: { fontSize: 7.5, cellPadding: 2.5, lineColor: COLORS.borderLight, lineWidth: 0.1 }, // tightened cellPadding from 4
+      styles: { fontSize: 7.5, cellPadding: 2.5, lineColor: COLORS.borderLight, lineWidth: 0.1 }, 
       margin: { left: 15, right: 15 }
     });
     finalY = doc.lastAutoTable.finalY;
@@ -530,10 +535,12 @@ const estimateFooterHeight = (bank, term, isInvoice) => {
 
 // MAIN EXPORT: Generate Invoice PDF
 export const generateInvoicePDF = async (data) => {
-  const { header, items, customer, bank, terms, companyInfo, payments } = data; // Receive payments
+  const { header, items, customer, bank, terms, companyInfo, payments } = data; 
   
-  // Debug Log added here
+  // Debug Logs
   console.log("COMPANY INFO PDF", companyInfo);
+  console.log("LOGO URL", companyInfo?.logo);
+  console.log("SIGNATURE URL", companyInfo?.signature);
 
   const logoObj = await loadImageAsBase64(companyInfo?.logo);
   const signatureObj = await loadImageAsBase64(companyInfo?.signature);
@@ -567,8 +574,10 @@ export const generateInvoicePDF = async (data) => {
 export const generateQuotationPDF = async (data) => {
   const { header, items, customer, bank, terms, companyInfo } = data;
   
-  // Debug Log added here
+  // Debug Logs
   console.log("COMPANY INFO PDF", companyInfo);
+  console.log("LOGO URL", companyInfo?.logo);
+  console.log("SIGNATURE URL", companyInfo?.signature);
 
   const logoObj = await loadImageAsBase64(companyInfo?.logo);
   const signatureObj = await loadImageAsBase64(companyInfo?.signature);
