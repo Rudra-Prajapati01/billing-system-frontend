@@ -11,7 +11,7 @@ import {
   FiX
 } from "react-icons/fi";
 import apiClient from "../../services/apiClient";
-import { getLogoUrl } from "../../utils/logoUtil";
+import { getImageUrl } from "../../utils/logoUtil";
 
 const API_URL = "/company-profile";
 
@@ -115,8 +115,8 @@ export default function CompanyProfile() {
       show_website_bill: !!profile.show_website_bill
     });
 
-    setLogoPreview(profile.logo ? getLogoUrl(profile.logo) : null);
-    setSignaturePreview(profile.signature ? getLogoUrl(profile.signature) : null);
+    setLogoPreview(profile.logo ? getImageUrl(profile.logo) : null);
+    setSignaturePreview(profile.signature ? getImageUrl(profile.signature) : null);
     
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -166,21 +166,30 @@ export default function CompanyProfile() {
 
     setLoading(true);
     try {
+      // CRITICAL: Do NOT set Content-Type header manually.
+      // When using FormData, the browser automatically sets
+      // 'Content-Type: multipart/form-data; boundary=----xxxx'
+      // Manually setting 'multipart/form-data' strips the boundary,
+      // causing Multer on the backend to receive req.files = undefined.
       if (profileId) {
-        const response = await apiClient.put(`${API_URL}/${profileId}`, data, {
-          headers: { "Content-Type": "multipart/form-data" }
-        });
+        const response = await apiClient.put(`${API_URL}/${profileId}`, data);
         setSuccess(response.data.message || "Company Profile updated successfully!");
       } else {
-        const response = await apiClient.post(API_URL, data, {
-          headers: { "Content-Type": "multipart/form-data" }
-        });
+        const response = await apiClient.post(API_URL, data);
         setSuccess(response.data.message || "Company Profile saved successfully!");
       }
-      
+
+      // Reset file states so old blobs don't linger
+      setLogoFile(null);
+      setSignatureFile(null);
+      const logoInput = document.getElementById("logoInput");
+      const sigInput = document.getElementById("signatureInput");
+      if (logoInput) logoInput.value = "";
+      if (sigInput) sigInput.value = "";
+
       setError(null);
-      await loadProfiles(); 
-      setShowForm(false); // Form hide kardo save hone ke baad
+      await loadProfiles();
+      setShowForm(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
       setTimeout(() => setSuccess(null), 4000);
     } catch (err) {
@@ -315,7 +324,14 @@ export default function CompanyProfile() {
                 <input id="logoInput" type="file" accept="image/*" onChange={(e) => handleFileChange(e, setLogoFile, setLogoPreview)} style={{ fontSize: "13px", width: "100%", marginBottom: "12px" }} />
                 {logoPreview && (
                   <div style={{ display: "inline-flex", alignItems: "center", gap: "12px", border: "1px solid #ced4da", padding: "8px", borderRadius: "4px", backgroundColor: "#fff" }}>
-                    <img src={logoPreview} alt="Logo" style={{ height: "70px", minWidth: "120px", objectFit: "contain" }} />
+                    <img
+                      src={logoPreview}
+                      alt="Company Logo"
+                      style={{ height: "70px", minWidth: "120px", objectFit: "contain" }}
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                      }}
+                    />
                     <button type="button" onClick={() => handleRemoveFile("logoInput", setLogoFile, setLogoPreview)} style={{ backgroundColor: "#f46a6a", color: "#fff", border: "none", borderRadius: "4px", padding: "6px 10px", cursor: "pointer", display: "inline-flex", alignItems: "center" }}><FiTrash2 size={13} /></button>
                   </div>
                 )}
@@ -325,7 +341,14 @@ export default function CompanyProfile() {
                 <input id="signatureInput" type="file" accept="image/*" onChange={(e) => handleFileChange(e, setSignatureFile, setSignaturePreview)} style={{ fontSize: "13px", width: "100%", marginBottom: "12px" }} />
                 {signaturePreview && (
                   <div style={{ display: "inline-flex", alignItems: "center", gap: "12px", border: "1px solid #ced4da", padding: "8px", borderRadius: "4px", backgroundColor: "#fff" }}>
-                    <img src={signaturePreview} alt="Signature" style={{ height: "65px", width: "160px", objectFit: "contain" }} />
+                    <img
+                      src={signaturePreview}
+                      alt="Company Signature"
+                      style={{ height: "65px", width: "160px", objectFit: "contain" }}
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                      }}
+                    />
                     <button type="button" onClick={() => handleRemoveFile("signatureInput", setSignatureFile, setSignaturePreview)} style={{ backgroundColor: "#f46a6a", color: "#fff", border: "none", borderRadius: "4px", padding: "6px 10px", cursor: "pointer", display: "inline-flex", alignItems: "center" }}><FiTrash2 size={13} /></button>
                   </div>
                 )}

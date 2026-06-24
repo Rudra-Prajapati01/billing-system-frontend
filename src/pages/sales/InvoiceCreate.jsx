@@ -3,13 +3,14 @@ import { FiPlus, FiTrash2, FiSave, FiAlertCircle, FiCheckCircle, FiSearch, FiEye
 import apiClient from "../../services/apiClient";
 import { QuickAddCustomer, QuickAddBank, QuickAddTerms } from "../../components/QuickAddModals";
 import { generateInvoicePDF } from "../../utils/pdfGenerator";
+import { getImageUrl } from "../../utils/logoUtil";
 
 const API_INVOICES = "/invoices";
 const API_CUSTOMERS = "/customers";
 const API_BANKS = "/banks";
 const API_TERMS = "/terms";
 const API_COMPANY = "/company-profile";
-const API_PAYMENTS_SUMMARY = "/payments/invoice-summary";
+const API_PAYMENTS_SUMMARY = "/payments/summary";
 
 export default function InvoiceCreate() {
   const [activeTab, setActiveTab] = useState("create");
@@ -246,8 +247,16 @@ export default function InvoiceCreate() {
         const bank = banks.find(b => String(b.id) === String(invHeader.bank_id)) || {};
         const term = terms.find(t => String(t.id) === String(invHeader.terms_id)) || {};
 
-        // Pass payments history as well
-        setViewDoc({ header: invHeader, items: res.data.items, customer: cust, bank: bank, terms: term, payments: res.data.payments || [] });
+        // Pass payments history and companyInfo as well
+        setViewDoc({
+          header: invHeader,
+          items: res.data.items,
+          customer: cust,
+          bank: bank,
+          terms: term,
+          company: res.data.companyInfo || companyInfo || {},
+          payments: res.data.payments || []
+        });
       } else alert("Failed to load invoice items.");
     } catch (err) { alert("Failed to fetch invoice details."); }
   };
@@ -261,8 +270,16 @@ export default function InvoiceCreate() {
         const bank = banks.find(b => String(b.id) === String(invHeader.bank_id)) || {};
         const term = terms.find(t => String(t.id) === String(invHeader.terms_id)) || {};
 
-        // Pass payments history to PDF
-        await generateInvoicePDF({ header: invHeader, items: res.data.items, customer: cust, bank: bank, terms: term, companyInfo, payments: res.data.payments || [] });
+        // Pass payments history and issuing company profile to PDF
+        await generateInvoicePDF({
+          header: invHeader,
+          items: res.data.items,
+          customer: cust,
+          bank: bank,
+          terms: term,
+          companyInfo: res.data.companyInfo || companyInfo || {},
+          payments: res.data.payments || []
+        });
       }
     } catch (err) { alert("Failed to fetch invoice details."); }
   };
@@ -421,11 +438,11 @@ export default function InvoiceCreate() {
               {paginatedInvoices.map((row, index) => {
                 const grandTotal = parseFloat(row.grand_total) || 0;
                 const paidAmount = parseFloat(row.paid_amount) || 0;
-                const outstanding = row.outstanding_amount !== undefined ? parseFloat(row.outstanding_amount) : grandTotal;
+                const outstanding = row.outstanding_amount !== undefined ? parseFloat(row.outstanding_amount) : (grandTotal - paidAmount);
 
                 let statusText = "Pending", statusColor = "#d97706", statusBg = "#fff3cd";
-                if (outstanding <= 0) { statusText = "Paid"; statusColor = "#2da949"; statusBg = "#e8f5e9"; }
-                else if (outstanding < grandTotal) { statusText = "Partial"; statusColor = "#1e88e5"; statusBg = "#e3f2fd"; }
+                if (paidAmount >= grandTotal) { statusText = "Paid"; statusColor = "#2da949"; statusBg = "#e8f5e9"; }
+                else if (paidAmount > 0) { statusText = "Partial"; statusColor = "#1e88e5"; statusBg = "#e3f2fd"; }
 
                 const dateObj = new Date(row.invoice_date);
                 const displayDate = isNaN(dateObj.getTime()) ? "-" : dateObj.toLocaleDateString("en-IN");
@@ -470,20 +487,46 @@ export default function InvoiceCreate() {
               {/* Header Top: Title & Company Info */}
               <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "2px solid #5156be", paddingBottom: "12px", marginBottom: "20px" }}>
                 <div>
-                  <h2 style={{ fontSize: "18px", color: "#5156be", margin: "0 0 4px 0", fontWeight: "700" }}>INVOICE</h2>
+                  {(() => {
+                    const detailGrandTotal = parseFloat(viewDoc.header.grand_total) || 0;
+                    const detailPaidAmount = parseFloat(viewDoc.header.paid_amount) || 0;
+                    let detailStatusText = "Pending", detailStatusColor = "#d97706", detailStatusBg = "#fff3cd";
+                    if (detailPaidAmount >= detailGrandTotal) { detailStatusText = "Paid"; detailStatusColor = "#2da949"; detailStatusBg = "#e8f5e9"; }
+                    else if (detailPaidAmount > 0) { detailStatusText = "Partial"; detailStatusColor = "#1e88e5"; detailStatusBg = "#e3f2fd"; }
+                    return (
+                      <h2 style={{ fontSize: "18px", color: "#5156be", margin: "0 0 4px 0", fontWeight: "700", display: "flex", alignItems: "center", gap: "8px" }}>
+                        INVOICE
+                        <span style={{ backgroundColor: detailStatusBg, color: detailStatusColor, padding: "2px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: "600" }}>
+                          {detailStatusText}
+                        </span>
+                      </h2>
+                    );
+                  })()}
                   <div><strong>Number:</strong> {viewDoc.header.invoice_no}</div>
                   <div><strong>Date:</strong> {new Date(viewDoc.header.invoice_date).toLocaleDateString("en-IN")}</div>
                 </div>
 
                 <div style={{ textAlign: "right" }}>
-                  {companyInfo?.logo && (
-                    <img src={`http://localhost:5000${companyInfo.logo}`} alt="Logo" style={{ height: "45px", objectFit: "contain", marginBottom: "8px" }} />
-                  )}
-                  <h4 style={{ margin: "0 0 2px 0", fontWeight: "700" }}>{companyInfo?.company_name || "COMPANY NAME"}</h4>
+                  {(() => {
+                    const activeComp = viewDoc.company || companyInfo || {};
+                    const logoUrl = activeComp.logo ? getImageUrl(activeComp.logo) : null;
+                    return logoUrl && (
+                      <img
+                        src={logoUrl}
+                        alt="Company Logo"
+                        style={{
+                          maxHeight: "80px",
+                          maxWidth: "180px",
+                          objectFit: "contain"
+                        }}
+                      />
+                    );
+                  })()}
+                  <h4 style={{ margin: "0 0 2px 0", fontWeight: "700" }}>{(viewDoc.company || companyInfo)?.company_name || "COMPANY NAME"}</h4>
                   <div style={{ fontSize: "11px", color: "#74788d" }}>
-                    <div>{companyInfo?.address}</div>
-                    <div>{companyInfo?.city}, {companyInfo?.state} - {companyInfo?.pincode}</div>
-                    {companyInfo?.gst_number && <div>GSTIN: {companyInfo.gst_number}</div>}
+                    <div>{(viewDoc.company || companyInfo)?.address}</div>
+                    <div>{(viewDoc.company || companyInfo)?.city}, {(viewDoc.company || companyInfo)?.state} - {(viewDoc.company || companyInfo)?.pincode}</div>
+                    {(viewDoc.company || companyInfo)?.gst_number && <div>GSTIN: {(viewDoc.company || companyInfo).gst_number}</div>}
                   </div>
                 </div>
               </div>

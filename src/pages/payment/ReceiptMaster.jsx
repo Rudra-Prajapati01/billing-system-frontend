@@ -3,6 +3,7 @@ import { FiSave, FiTrash2, FiSearch, FiCheckCircle, FiAlertCircle, FiDownload, F
 import apiClient from "../../services/apiClient";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { getLogoUrl } from "../../utils/logoUtil";
 
 const API_RECEIPTS = "/receipts";
 const API_PAYMENTS = "/payments";
@@ -17,28 +18,61 @@ const loadImageAsBase64 = (url) => {
     if (!url) return resolve(null);
     const fullUrl = url.startsWith("http://") || url.startsWith("https://") 
       ? url 
-      : `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${url}`;
+      : getLogoUrl(url);
 
-    const img = new Image();
-    img.crossOrigin = "Anonymous";
-    img.onload = () => {
-      try {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0);
-        resolve({
-          data: canvas.toDataURL("image/png"),
-          width: img.width,
-          height: img.height
-        });
-      } catch (e) {
-        resolve(null);
-      }
-    };
-    img.onerror = () => resolve(null);
-    img.src = fullUrl;
+    fetch(fullUrl)
+      .then((res) => {
+        if (!res.ok) throw new Error("Fetch failed");
+        return res.blob();
+      })
+      .then((blob) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const img = new Image();
+          img.onload = () => {
+            resolve({
+              data: reader.result,
+              width: img.width,
+              height: img.height
+            });
+          };
+          img.onerror = () => {
+            resolve({
+              data: reader.result,
+              width: 150,
+              height: 80
+            });
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(blob);
+      })
+      .catch((err) => {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.onload = () => {
+          try {
+            const canvas = document.createElement("canvas");
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0);
+            resolve({
+              data: canvas.toDataURL("image/png"),
+              width: img.width,
+              height: img.height
+            });
+          } catch (e) {
+            console.error("Error drawing image to canvas:", e);
+            resolve(null);
+          }
+        };
+        img.onerror = () => {
+          console.warn("Failed to load image at:", fullUrl);
+          resolve(null);
+        };
+        img.src = fullUrl;
+      });
   });
 };
 
@@ -205,7 +239,7 @@ export default function ReceiptMaster() {
 
       try {
         const compRes = await apiClient.get(API_COMPANY);
-        companyInfo = Array.isArray(compRes.data) ? compRes.data[0] : compRes.data || {};
+        companyInfo = compRes.data?.profile || (Array.isArray(compRes.data) ? compRes.data[0] : compRes.data) || {};
         
         const custRes = await apiClient.get(API_CUSTOMERS);
         const customers = custRes.data || [];

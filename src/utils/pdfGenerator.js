@@ -6,34 +6,63 @@ import { getLogoUrl } from "./logoUtil";
 const loadImageAsBase64 = (url) => {
   return new Promise((resolve) => {
     if (!url) return resolve(null);
-    const fullUrl = url.startsWith("http://") || url.startsWith("https://") 
-      ? url 
+    const fullUrl = url.startsWith("http://") || url.startsWith("https://")
+      ? url
       : getLogoUrl(url);
 
-    const img = new Image();
-    img.crossOrigin = "Anonymous";
-    img.onload = () => {
-      try {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0);
-        resolve({
-          data: canvas.toDataURL("image/png"),
-          width: img.width,
-          height: img.height
-        });
-      } catch (e) {
-        console.error("Error drawing image to canvas:", e);
-        resolve(null);
-      }
-    };
-    img.onerror = () => {
-      console.warn("Failed to load image at:", fullUrl);
-      resolve(null);
-    };
-    img.src = fullUrl;
+    fetch(fullUrl)
+      .then((res) => {
+        if (!res.ok) throw new Error("Fetch failed");
+        return res.blob();
+      })
+      .then((blob) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const img = new Image();
+          img.onload = () => {
+            resolve({
+              data: reader.result,
+              width: img.width,
+              height: img.height
+            });
+          };
+          img.onerror = () => {
+            resolve({
+              data: reader.result,
+              width: 150,
+              height: 80
+            });
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(blob);
+      })
+      .catch((err) => {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.onload = () => {
+          try {
+            const canvas = document.createElement("canvas");
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0);
+            resolve({
+              data: canvas.toDataURL("image/png"),
+              width: img.width,
+              height: img.height
+            });
+          } catch (e) {
+            console.error("Error drawing image to canvas:", e);
+            resolve(null);
+          }
+        };
+        img.onerror = () => {
+          console.warn("Failed to load image at:", fullUrl);
+          resolve(null);
+        };
+        img.src = fullUrl;
+      });
   });
 };
 
@@ -75,7 +104,7 @@ const drawHeader = (doc, title, docNo, companyInfo, logoObj) => {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(22); // tightened from 26
   doc.text(`${title.toUpperCase()}`, 15, currentY + 6);
-  
+
   doc.setTextColor(...COLORS.textMuted);
   doc.setFontSize(10);
   doc.text(`Reference: #${docNo}`, 15, currentY + 12);
@@ -94,7 +123,7 @@ const drawHeader = (doc, title, docNo, companyInfo, logoObj) => {
 
       const logoX = rightAlignX - targetWidth;
       doc.addImage(logoObj.data, "PNG", logoX, currentY - 4, targetWidth, targetHeight);
-      currentY += targetHeight + 1; 
+      currentY += targetHeight + 1;
     } catch (e) {
       console.error("Failed to add logo:", e);
     }
@@ -103,7 +132,7 @@ const drawHeader = (doc, title, docNo, companyInfo, logoObj) => {
   // ==========================================
   // Right: Company Details (MODIFIED SECTION)
   // ==========================================
-  
+
   // Company Name
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
@@ -165,7 +194,7 @@ const drawHeader = (doc, title, docNo, companyInfo, logoObj) => {
 
   // Divider Line
   const headerMaxY = Math.max(currentY + 12, detailsY);
-  doc.setDrawColor(...COLORS.borderLight); 
+  doc.setDrawColor(...COLORS.borderLight);
   doc.setLineWidth(0.5);
   doc.line(15, headerMaxY + 3, 195, headerMaxY + 3);
 
@@ -219,7 +248,7 @@ const drawBillingAndSummary = (doc, yStart, isInvoice, docNo, docDate, grandTota
       addressY += 3.8;
     });
   }
-  
+
   const phoneNo = customer?.phone_no || customer?.mobile;
   if (phoneNo) {
     doc.text(`Phone: ${phoneNo}`, 15, addressY + 1);
@@ -252,8 +281,8 @@ const drawBillingAndSummary = (doc, yStart, isInvoice, docNo, docDate, grandTota
 
   const dueDate = new Date(docDate);
   dueDate.setDate(dueDate.getDate() + 15);
-  const formattedDueDate = dueDate.toLocaleDateString("en-IN", { 
-    day: "2-digit", month: "short", year: "numeric" 
+  const formattedDueDate = dueDate.toLocaleDateString("en-IN", {
+    day: "2-digit", month: "short", year: "numeric"
   });
 
   const displayAmount = (isInvoice && balanceDue !== null && balanceDue !== undefined) ? balanceDue : grandTotal;
@@ -265,7 +294,7 @@ const drawBillingAndSummary = (doc, yStart, isInvoice, docNo, docDate, grandTota
     [isInvoice ? "Balance Due" : "Amount Due", formatCurrency(displayAmount)]
   ];
 
-  if (!isInvoice) rows.splice(2, 1); 
+  if (!isInvoice) rows.splice(2, 1);
 
   doc.setDrawColor(...COLORS.borderLight);
   doc.setLineWidth(0.2);
@@ -280,16 +309,16 @@ const drawBillingAndSummary = (doc, yStart, isInvoice, docNo, docDate, grandTota
       doc.rect(metaX, metaY, col1Width + col2Width, rowHeight);
       doc.line(metaX + col1Width, metaY, metaX + col1Width, metaY + rowHeight);
     }
-    
+
     doc.setFont("helvetica", isAmountRow ? "bold" : "normal");
     doc.setFontSize(isAmountRow ? 9.5 : 8.5);
     doc.setTextColor(...(isAmountRow ? COLORS.white : COLORS.textMuted));
     doc.text(row[0], metaX + 3, metaY + (isAmountRow ? 5.5 : 5));
-    
+
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...(isAmountRow ? COLORS.white : COLORS.textMain));
     doc.text(row[1], metaX + col1Width + 3, metaY + (isAmountRow ? 5.5 : 5));
-    
+
     metaY += isAmountRow ? rowHeight + 1.5 : rowHeight;
   });
 
@@ -322,8 +351,8 @@ const drawFooterBlocks = (doc, yStart, subtotal, gstAmount, grandTotal, bank, te
   doc.setLineWidth(0.2);
 
   totals.forEach((row, i) => {
-    const isLast = (i === totals.length - 1); 
-    
+    const isLast = (i === totals.length - 1);
+
     if (isLast) {
       doc.setFillColor(...COLORS.primary);
       doc.rect(totalsX, totalY, col1Width + col2Width, rowHeight + 1.5, "F");
@@ -340,7 +369,7 @@ const drawFooterBlocks = (doc, yStart, subtotal, gstAmount, grandTotal, bank, te
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...(isLast ? COLORS.white : COLORS.textMain));
     doc.text(row[1], totalsX + col1Width + col2Width - 3, totalY + (isLast ? 5 : 4.5), { align: "right" });
-    
+
     totalY += isLast ? rowHeight + 1.5 : rowHeight;
   });
 
@@ -356,14 +385,14 @@ const drawFooterBlocks = (doc, yStart, subtotal, gstAmount, grandTotal, bank, te
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.5); // tightened from 8.5
     doc.setTextColor(...COLORS.textMain);
-    
+
     let bankY = leftY + 8.5; // tightened from +10
     if (bank.bank_name) { doc.text(`Bank Name: ${bank.bank_name}`, 15, bankY); bankY += 3.8; }
     if (bank.account_holder_name) { doc.text(`Account Holder: ${bank.account_holder_name}`, 15, bankY); bankY += 3.8; }
     if (bank.account_number) { doc.text(`Account No: ${bank.account_number}   |   IFSC: ${bank.ifsc_code || '-'}`, 15, bankY); bankY += 3.8; }
     if (bank.branch_name) { doc.text(`Branch: ${bank.branch_name}`, 15, bankY); bankY += 3.8; }
-    
-    leftY = bankY + 2.5; 
+
+    leftY = bankY + 2.5;
   }
 
   if (term && term.description) {
@@ -380,8 +409,8 @@ const drawFooterBlocks = (doc, yStart, subtotal, gstAmount, grandTotal, bank, te
     let lineY = leftY + 8; // tightened from +10
     termLines.forEach((line, index) => {
       const prefix = `${index + 1}. `;
-      const lineText = line.trim().startsWith(index + 1) || line.trim().startsWith("-") 
-        ? line.trim() 
+      const lineText = line.trim().startsWith(index + 1) || line.trim().startsWith("-")
+        ? line.trim()
         : prefix + line.trim();
 
       const wrapped = doc.splitTextToSize(lineText, 100);
@@ -417,7 +446,7 @@ const drawFooterBlocks = (doc, yStart, subtotal, gstAmount, grandTotal, bank, te
 const addWatermark = (doc, logoObj) => {
   if (!logoObj || !logoObj.data) return;
   const pageCount = doc.internal.getNumberOfPages();
-  
+
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     try {
@@ -425,22 +454,22 @@ const addWatermark = (doc, logoObj) => {
       // Set transparency to 6%
       const gState = new doc.GState({ opacity: 0.06 });
       doc.setGState(gState);
-      
-      const maxWmWidth = 140; 
-      const maxWmHeight = 80; 
-      
+
+      const maxWmWidth = 140;
+      const maxWmHeight = 80;
+
       let ratio = logoObj.width / logoObj.height;
       let wmWidth = maxWmWidth;
       let wmHeight = wmWidth / ratio;
-      
+
       if (wmHeight > maxWmHeight) {
         wmHeight = maxWmHeight;
         wmWidth = wmHeight * ratio;
       }
-      
+
       const x = (210 - wmWidth) / 2;
       const y = (297 - wmHeight) / 2;
-      
+
       doc.addImage(logoObj.data, "PNG", x, y, wmWidth, wmHeight);
       doc.restoreGraphicsState();
     } catch (e) {
@@ -462,11 +491,11 @@ const drawItemsAndPayments = (doc, startY, items, payments) => {
       return [
         `${item.service_name}${item.description ? `\n${item.description}` : ''}`,
         formatCurrency(price),
-        qty.toString(), 
+        qty.toString(),
         formatCurrency(total)
       ];
     }),
-    theme: "striped", 
+    theme: "striped",
     headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontSize: 9, fontStyle: "bold", halign: "left" },
     alternateRowStyles: { fillColor: COLORS.primaryLight },
     bodyStyles: { lineColor: COLORS.borderLight, lineWidth: 0.1, textColor: COLORS.textMain, valign: "top" },
@@ -532,10 +561,10 @@ const estimateFooterHeight = (bank, term, isInvoice) => {
 // MAIN EXPORT: Generate Invoice PDF
 export const generateInvoicePDF = async (data) => {
   const { header, items, customer, bank, terms, companyInfo, payments } = data; // Receive payments
-  
-  // Debug Log added here
-  console.log("COMPANY INFO PDF", companyInfo);
 
+  console.log("COMPANY INFO PDF", companyInfo);
+  console.log("LOGO", companyInfo?.logo);
+  console.log("SIGNATURE", companyInfo?.signature);
   const logoObj = await loadImageAsBase64(companyInfo?.logo);
   const signatureObj = await loadImageAsBase64(companyInfo?.signature);
 
@@ -567,7 +596,7 @@ export const generateInvoicePDF = async (data) => {
 // MAIN EXPORT 2: Generate Quotation PDF
 export const generateQuotationPDF = async (data) => {
   const { header, items, customer, bank, terms, companyInfo } = data;
-  
+
   // Debug Log added here
   console.log("COMPANY INFO PDF", companyInfo);
 

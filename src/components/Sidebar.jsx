@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import apiClient from "../services/apiClient";
+import { getImageUrl } from "../utils/logoUtil";
 import {
   FiHome,
   FiUsers,
@@ -130,6 +132,21 @@ const Sidebar = ({ collapsed, mobileOpen }) => {
     "Party Report": true, // Automatically open the Party Report accordion for convenience
     Administration: false,
   });
+  const [sidebarLogo, setSidebarLogo] = useState(null);
+
+  useEffect(() => {
+    const fetchSidebarLogo = async () => {
+      try {
+        const response = await apiClient.get("/company-profile");
+        if (response.data && response.data.profile && response.data.profile.logo) {
+          setSidebarLogo(response.data.profile.logo);
+        }
+      } catch (err) {
+        console.error("Failed to load sidebar logo", err);
+      }
+    };
+    fetchSidebarLogo();
+  }, []);
 
   const toggleMenu = (label) => {
     setOpenMenus((prev) => ({
@@ -176,17 +193,21 @@ const Sidebar = ({ collapsed, mobileOpen }) => {
     >
       <div className="mn-sidebar__brand">
         <span className="mn-sidebar__logo-icon">
-          <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
-            <circle cx="12" cy="12" r="10" fill="#5156be" />
-            <path
-              d="M7 14.5 12 8l5 6.5"
-              stroke="#fff"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              fill="none"
+          {sidebarLogo ? (
+            <img
+              src={getImageUrl(sidebarLogo)}
+              alt="Company Logo"
+              style={{ width: "32px", height: "32px", objectFit: "contain" }}
+              onError={(e) => {
+                e.target.style.display = "none";
+              }}
             />
-          </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
+              <circle cx="12" cy="12" r="10" fill="#5156be" />
+              <path d="M7 14.5 12 8l5 6.5" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            </svg>
+          )}
         </span>
         <span className="mn-sidebar__logo-text">Biling</span>
       </div>

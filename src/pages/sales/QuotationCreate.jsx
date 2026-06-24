@@ -3,6 +3,7 @@ import { FiPlus, FiTrash2, FiSave, FiAlertCircle, FiCheckCircle, FiSearch, FiFil
 import apiClient from "../../services/apiClient";
 import { QuickAddCustomer, QuickAddBank, QuickAddTerms } from "../../components/QuickAddModals";
 import { generateQuotationPDF } from "../../utils/pdfGenerator";
+import { getImageUrl } from "../../utils/logoUtil";
 
 const API_QUOTATIONS = "/quotations";
 const API_CUSTOMERS = "/customers";
@@ -304,7 +305,14 @@ export default function QuotationCreate() {
     try {
       const res = await apiClient.get(`${API_QUOTATIONS}/${row.id}`);
       if (res.data && res.data.items) {
-        setViewDoc({ header: row, items: res.data.items, customer: cust, bank, terms: term });
+        setViewDoc({
+          header: row,
+          items: res.data.items,
+          customer: cust,
+          bank,
+          terms: term,
+          company: res.data.companyInfo || companyInfo || {}
+        });
       } else {
         alert("Failed to load quotation items.");
       }
@@ -322,7 +330,12 @@ export default function QuotationCreate() {
       const res = await apiClient.get(`${API_QUOTATIONS}/${row.id}`);
       if (res.data && res.data.items) {
         await generateQuotationPDF({
-          header: row, items: res.data.items, customer: cust, bank, terms: term, companyInfo
+          header: row,
+          items: res.data.items,
+          customer: cust,
+          bank,
+          terms: term,
+          companyInfo: res.data.companyInfo || companyInfo || {}
         });
       } else {
         alert("Failed to load quotation items for printing.");
@@ -688,12 +701,26 @@ export default function QuotationCreate() {
                 </div>
 
                 <div style={{ textAlign: "right" }}>
-                  {companyInfo?.logo && (<img src={`http://localhost:5000${companyInfo.logo}`} alt="Company Logo" style={{ height: "45px", objectFit: "contain", marginBottom: "8px" }} />)}
-                  <h4 style={{ margin: "0 0 2px 0", fontWeight: "700" }}>{companyInfo?.company_name || "COMPANY NAME"}</h4>
+                  {(() => {
+                    const activeComp = viewDoc.company || companyInfo || {};
+                    const logoUrl = activeComp.logo ? getImageUrl(activeComp.logo) : null;
+                    return logoUrl && (
+                      <img
+                        src={logoUrl}
+                        alt="Company Logo"
+                        style={{
+                          maxHeight: "80px",
+                          maxWidth: "180px",
+                          objectFit: "contain"
+                        }}
+                      />
+                    );
+                  })()}
+                  <h4 style={{ margin: "0 0 2px 0", fontWeight: "700" }}>{(viewDoc.company || companyInfo)?.company_name || "COMPANY NAME"}</h4>
                   <div style={{ fontSize: "11px", color: "#74788d" }}>
-                    <div>{companyInfo?.address}</div>
-                    <div>{companyInfo?.city}, {companyInfo?.state} - {companyInfo?.pincode}</div>
-                    {companyInfo?.gst_number && <div>GSTIN: {companyInfo.gst_number}</div>}
+                    <div>{(viewDoc.company || companyInfo)?.address}</div>
+                    <div>{(viewDoc.company || companyInfo)?.city}, {(viewDoc.company || companyInfo)?.state} - {(viewDoc.company || companyInfo)?.pincode}</div>
+                    {(viewDoc.company || companyInfo)?.gst_number && <div>GSTIN: {(viewDoc.company || companyInfo).gst_number}</div>}
                   </div>
                 </div>
               </div>
