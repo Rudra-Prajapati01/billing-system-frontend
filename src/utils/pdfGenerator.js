@@ -1,19 +1,15 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { getImageUrl } from "./logoUtil";
 
 // Helper: Load image and return aspect ratio data
 const loadImageAsBase64 = (url) => {
   return new Promise((resolve) => {
     if (!url) return resolve(null);
 
-    // Dynamic URL Fix for Local vs Live Environment
-    const baseUrl =
-      import.meta.env.VITE_API_URL?.replace("/api", "") ||
-      "https://slateblue-leopard-690725.hostingersite.com";
-
     const fullUrl = url.startsWith("http://") || url.startsWith("https://")
       ? url
-      : `${baseUrl}${url}`;
+      : getImageUrl(url);
 
     console.log("FULL IMAGE URL:", fullUrl);
 

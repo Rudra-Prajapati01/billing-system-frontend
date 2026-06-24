@@ -5,11 +5,19 @@ export const getImageUrl = (path) => {
     import.meta.env.VITE_API_URL?.replace("/api", "") ||
     window.location.origin;
 
-  const formattedPath = path.startsWith("/")
-    ? path
-    : `/${path}`;
+  // Rewrite /uploads/<filename> or uploads/<filename> to use the secure /api/uploads/<filename> route
+  let cleanPath = path;
+  if (cleanPath.includes("/uploads/")) {
+    const filename = cleanPath.split("/uploads/")[1];
+    cleanPath = `/api/uploads/${filename}`;
+  } else if (cleanPath.startsWith("uploads/")) {
+    const filename = cleanPath.split("uploads/")[1];
+    cleanPath = `/api/uploads/${filename}`;
+  } else if (!cleanPath.startsWith("/")) {
+    cleanPath = `/${cleanPath}`;
+  }
 
-  return `${baseUrl}${formattedPath}`;
+  return `${baseUrl}${cleanPath}`;
 };
 
 export const getLogoUrl = getImageUrl;
