@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiEye, FiEyeOff, FiLock, FiUser, FiAlertCircle } from "react-icons/fi";
-import { getImageUrl } from "../../utils/logoUtil";
+import Logo from "../../assets/Logo.png";
 import apiClient from "../../services/apiClient";
 
 export default function Login() {
@@ -11,23 +11,7 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [loginLogo, setLoginLogo] = useState(null);
-
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const fetchLoginLogo = async () => {
-      try {
-        const response = await apiClient.get("/company-profile/public");
-        if (response.data && response.data.profile && response.data.profile.logo) {
-          setLoginLogo(response.data.profile.logo);
-        }
-      } catch (err) {
-        // Silently fail if public logo is unavailable
-      }
-    };
-    fetchLoginLogo();
-  }, []);
 
   // If already logged in, redirect to dashboard
   useEffect(() => {
@@ -83,7 +67,7 @@ export default function Login() {
       console.error("Login error:", err);
       setError(
         err.response?.data?.message ||
-          "Failed to connect to the server. Please ensure the backend is running."
+        "Failed to connect to the server. Please ensure the backend is running."
       );
     } finally {
       setLoading(false);
@@ -93,28 +77,18 @@ export default function Login() {
   return (
     <div style={styles.container}>
       <style>{hoverStyles}</style>
-      
+
       <div style={styles.card}>
+
         {/* Brand/Logo Header */}
         <div style={styles.logoHeader}>
           <div style={styles.logoIcon}>
-            {loginLogo ? (
-              <img
-                src={getImageUrl(loginLogo)}
-                alt="Company Logo"
-                style={{ width: "32px", height: "32px", objectFit: "contain" }}
-                onError={(e) => {
-                  e.target.style.display = "none";
-                }}
-              />
-            ) : (
-              <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
-                <circle cx="12" cy="12" r="10" fill="#5156be" />
-                <path d="M7 14.5 12 8l5 6.5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-              </svg>
-            )}
+            <img
+              src={Logo}
+              alt="Billing System Logo"
+              style={{ width: "100%", maxWidth: "240px", height: "auto", objectFit: "contain" }}
+            />
           </div>
-          <h2 style={styles.logoText}>Biling SaaS</h2>
         </div>
 
         {/* Welcome Section */}

@@ -2,41 +2,89 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { getImageUrl } from "./logoUtil";
 
-// Helper: Load image and return aspect ratio data
+// Helper: Load image via base64 API route to bypass CORS issues on CDN environments
 const loadImageAsBase64 = (url) => {
-  return new Promise((resolve) => {
+  return new Promise(async (resolve) => {
     if (!url) return resolve(null);
 
-    const fullUrl = url.startsWith("http://") || url.startsWith("https://")
-      ? url
-      : getImageUrl(url);
-
-    console.log("FULL IMAGE URL:", fullUrl);
-
-    const img = new Image();
-    img.crossOrigin = "Anonymous";
-    img.onload = () => {
-      try {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0);
+    // If it's already a base64 data URL, we just resolve it
+    if (url.startsWith("data:")) {
+      const img = new Image();
+      img.onload = () => {
         resolve({
-          data: canvas.toDataURL("image/png"),
+          data: url,
           width: img.width,
           height: img.height
         });
-      } catch (e) {
-        console.error("Error drawing image to canvas:", e);
-        resolve(null);
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+      return;
+    }
+
+    try {
+      const filename = url.split("/").pop();
+      const baseUrl =
+        import.meta.env.VITE_API_URL ||
+        (window.location.origin + "/api");
+
+      // Build API request URL
+      const apiEndpoint = `${baseUrl}/logo-base64/${filename}`;
+      console.log("[PDF GENERATOR] Fetching base64 via API:", apiEndpoint);
+
+      const response = await fetch(apiEndpoint);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    };
-    img.onerror = () => {
-      console.warn("Failed to load image at:", fullUrl);
-      resolve(null);
-    };
-    img.src = fullUrl;
+      
+      const json = await response.json();
+      if (json.success && json.image) {
+        const img = new Image();
+        img.onload = () => {
+          resolve({
+            data: json.image,
+            width: img.width,
+            height: img.height
+          });
+        };
+        img.onerror = () => {
+          console.warn("[PDF GENERATOR] Failed to parse base64 image data");
+          resolve(null);
+        };
+        img.src = json.image;
+      } else {
+        throw new Error(json.message || "Invalid API response");
+      }
+    } catch (err) {
+      console.warn("[PDF GENERATOR] Failed to load base64 from API:", err.message);
+      
+      // Fallback: Try loading directly via canvas in case of local server issues
+      const baseUrl =
+        import.meta.env.VITE_API_URL?.replace("/api", "") ||
+        window.location.origin;
+      const fallbackUrl = url.startsWith("http") ? url : `${baseUrl}${url}`;
+      
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0);
+          resolve({
+            data: canvas.toDataURL("image/png"),
+            width: img.width,
+            height: img.height
+          });
+        } catch (canvasErr) {
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = fallbackUrl;
+    }
   });
 };
 
