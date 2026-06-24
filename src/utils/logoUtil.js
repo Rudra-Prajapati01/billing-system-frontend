@@ -5,17 +5,9 @@ export const getImageUrl = (path) => {
     import.meta.env.VITE_API_URL?.replace("/api", "") ||
     window.location.origin;
 
-  // Rewrite /uploads/<filename> or uploads/<filename> to use the secure /api/uploads/<filename> route
-  let cleanPath = path;
-  if (cleanPath.includes("/uploads/")) {
-    const filename = cleanPath.split("/uploads/")[1];
-    cleanPath = `/api/uploads/${filename}`;
-  } else if (cleanPath.startsWith("uploads/")) {
-    const filename = cleanPath.split("uploads/")[1];
-    cleanPath = `/api/uploads/${filename}`;
-  } else if (!cleanPath.startsWith("/")) {
-    cleanPath = `/${cleanPath}`;
-  }
+  const cleanPath = path.startsWith("/")
+    ? path
+    : `/${path}`;
 
   return `${baseUrl}${cleanPath}`;
 };
