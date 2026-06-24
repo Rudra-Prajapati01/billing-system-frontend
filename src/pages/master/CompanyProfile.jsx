@@ -92,6 +92,8 @@ export default function CompanyProfile() {
   };
 
   const handleEdit = (profile) => {
+    console.log("PROFILE LOGO", profile.logo);
+
     setProfileId(profile.id);
     
     setFormData({
@@ -121,6 +123,7 @@ export default function CompanyProfile() {
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -207,6 +210,8 @@ export default function CompanyProfile() {
   const labelStyle = { display: "block", fontSize: "13px", fontWeight: "600", color: "#495057", marginBottom: "6px" };
   const inputStyle = { width: "100%", padding: "10px 12px", border: "1px solid #ced4da", borderRadius: "6px", outline: "none", fontSize: "14px", color: "#495057", backgroundColor: "#fff", boxSizing: "border-box" };
   const toggleLabelStyle = { display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#5156be", fontWeight: "600", cursor: "pointer", marginTop: "6px" };
+
+  console.log("LOGO PREVIEW", logoPreview);
 
   return (
     <div style={{ padding: "24px", backgroundColor: "#f3f4f6", minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>

@@ -10,6 +10,10 @@ export default defineConfig({
         // Change 5000 to whichever port your Node server is running on!
         target: 'http://localhost:5000', 
         changeOrigin: true,
+      },
+      '/uploads': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
       }
     }
   }
