@@ -61,9 +61,9 @@ export default function CompanyManagement() {
         `/tenant-companies?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`
       );
       if (response.data.success) {
-        setCompanies(response.data.data);
-        setTotalPages(response.data.pagination.totalPages);
-        setTotalCompanies(response.data.pagination.total);
+        setCompanies(response.data.data || []);
+        setTotalPages(1);
+        setTotalCompanies(response.data.data ? response.data.data.length : 0);
       }
     } catch (err) {
       console.error("Fetch companies error:", err);

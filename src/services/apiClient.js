@@ -15,10 +15,10 @@ apiClient.interceptors.request.use(
       config.headers["Authorization"] = `Bearer ${token}`;
     }
 
-  //  const selectedCompanyId = localStorage.getItem("selectedCompanyId");
-  //  if (selectedCompanyId) {
-  //    config.headers["X-Company-Id"] = selectedCompanyId;
-  //  }
+    const selectedCompanyId = localStorage.getItem("selectedCompanyId");
+    if (selectedCompanyId) {
+      config.headers["X-Company-Id"] = selectedCompanyId;
+    }
 
     return config;
   },

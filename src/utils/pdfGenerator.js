@@ -1,5 +1,6 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { getLogoUrl } from "./logoUtil";
 
 // Helper: Load image and return aspect ratio data
 const loadImageAsBase64 = (url) => {
@@ -7,7 +8,7 @@ const loadImageAsBase64 = (url) => {
     if (!url) return resolve(null);
     const fullUrl = url.startsWith("http://") || url.startsWith("https://") 
       ? url 
-      : `http://localhost:5000${url}`;
+      : getLogoUrl(url);
 
     const img = new Image();
     img.crossOrigin = "Anonymous";

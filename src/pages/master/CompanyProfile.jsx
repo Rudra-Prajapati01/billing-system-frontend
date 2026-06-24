@@ -11,6 +11,7 @@ import {
   FiX
 } from "react-icons/fi";
 import apiClient from "../../services/apiClient";
+import { getLogoUrl } from "../../utils/logoUtil";
 
 const API_URL = "/company-profile";
 
@@ -114,8 +115,8 @@ export default function CompanyProfile() {
       show_website_bill: !!profile.show_website_bill
     });
 
-    setLogoPreview(profile.logo ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${profile.logo}` : null);
-    setSignaturePreview(profile.signature ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${profile.signature}` : null);
+    setLogoPreview(profile.logo ? getLogoUrl(profile.logo) : null);
+    setSignaturePreview(profile.signature ? getLogoUrl(profile.signature) : null);
     
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
