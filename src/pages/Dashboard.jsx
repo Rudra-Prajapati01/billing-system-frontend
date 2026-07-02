@@ -3,8 +3,13 @@ import Chart from "react-apexcharts";
 import {
   FiArrowUp,
   FiArrowDown,
-  FiChevronDown,
   FiMoreVertical,
+  FiUsers,
+  FiBriefcase,
+  FiDollarSign,
+  FiActivity,
+  FiPieChart,
+  FiUserPlus
 } from "react-icons/fi";
 import apiClient from "../services/apiClient";
 
@@ -36,9 +41,7 @@ const RadialMini = ({ color }) => {
       },
     },
   };
-  return (
-    <Chart options={options} series={[70]} type="radialBar" height={56} width={56} />
-  );
+  return <Chart options={options} series={[70]} type="radialBar" height={56} width={56} />;
 };
 
 const StatCard = ({ card }) => (
@@ -51,158 +54,71 @@ const StatCard = ({ card }) => (
       <div className="mn-stat-card__spark">
         {card.spark === "bar" ? (
           <Sparkline color={card.color} />
-        ) : (
+        ) : card.spark === "radial" ? (
           <RadialMini color={card.color} />
+        ) : (
+          <div style={{ color: card.color, backgroundColor: card.color + "20", padding: "12px", borderRadius: "10px" }}>
+            {card.icon}
+          </div>
         )}
       </div>
     </div>
-    <div className="mn-stat-card__footer">
-      <span
-        className={
-          "mn-stat-card__delta " +
-          (card.trend === "up" ? "mn-stat-card__delta--up" : "mn-stat-card__delta--down")
-        }
-      >
-        {card.trend === "up" ? <FiArrowUp size={12} /> : <FiArrowDown size={12} />}
-        {card.delta}
-      </span>
-      <span className="mn-stat-card__since">Overall</span>
-    </div>
+    {card.delta && (
+      <div className="mn-stat-card__footer">
+        <span
+          className={
+            "mn-stat-card__delta " +
+            (card.trend === "up" ? "mn-stat-card__delta--up" : card.trend === "down" ? "mn-stat-card__delta--down" : "")
+          }
+        >
+          {card.trend === "up" ? <FiArrowUp size={12} /> : card.trend === "down" ? <FiArrowDown size={12} /> : null}
+          {card.delta}
+        </span>
+        <span className="mn-stat-card__since">Overall</span>
+      </div>
+    )}
   </div>
 );
 
+const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(val || 0);
+const formatNumber = (val) => Number(val || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+const colorsArray = ["#5156be", "#299cdb", "#0ab39c", "#f7b84b", "#7e3af2"];
+
 /* ---------------------------------------------------------------------- */
-/*  Dashboard                                                              */
+/*  CompanyDashboard                                                       */
 /* ---------------------------------------------------------------------- */
 
-const Dashboard = () => {
-  const [range, setRange] = useState("year");
-  const [productsRange, setProductsRange] = useState("overall");
-  const [customersRange, setCustomersRange] = useState("recent");
-  const [activityType, setActivityType] = useState("system");
-  const [leadRange, setLeadRange] = useState("year");
-
-  const [data, setData] = useState({
-    totalRevenue: 0,
-    totalInvoices: 0,
-    totalCustomers: 0,
-    pendingAmount: 0,
-    chartData: { months: [], revenue: [], collections: [], invoices: [] },
-    topProducts: [],
-    latestCustomers: [],
-    recentActivities: [],
-    leadStatusSummary: { Pending: 0, Inprocess: 0, Order: 0, Closed: 0, Cancel: 0 }
-  });
-
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const response = await apiClient.get("/dashboard", {
-          params: { range, productsRange, customersRange, activityType, leadRange }
-        });
-        setData(response.data);
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDashboardData();
-  }, [range, productsRange, customersRange, activityType, leadRange]);
-
-  if (loading && !data.chartData.months.length) {
-    return <div style={{ padding: "2rem" }}>Loading dashboard data...</div>;
-  }
-
-  // Format currency
-  const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(val || 0);
-  const formatNumber = (val) => Number(val || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
-
+const CompanyDashboard = ({ data, range, setRange, productsRange, setProductsRange, customersRange, setCustomersRange, activityType, setActivityType, leadRange, setLeadRange }) => {
   const statCards = [
-    {
-      label: "Total Revenue",
-      value: formatCurrency(data.totalRevenue),
-      delta: "N/A",
-      trend: "up",
-      spark: "bar",
-      color: "#5156be",
-    },
-    {
-      label: "Total Invoices",
-      value: formatNumber(data.totalInvoices),
-      delta: "N/A",
-      trend: "up",
-      spark: "radial",
-      color: "#0ab39c",
-    },
-    {
-      label: "Total Customers",
-      value: formatNumber(data.totalCustomers),
-      delta: "N/A",
-      trend: "up",
-      spark: "radial",
-      color: "#299cdb",
-    },
-    {
-      label: "Pending Amount",
-      value: formatCurrency(data.pendingAmount),
-      delta: "N/A",
-      trend: "down",
-      spark: "bar",
-      color: "#f7b84b",
-    },
+    { label: "Total Revenue", value: formatCurrency(data.totalRevenue), delta: "N/A", trend: "up", spark: "bar", color: "#5156be" },
+    { label: "Total Invoices", value: formatNumber(data.totalInvoices), delta: "N/A", trend: "up", spark: "radial", color: "#0ab39c" },
+    { label: "Total Customers", value: formatNumber(data.totalCustomers), delta: "N/A", trend: "up", spark: "radial", color: "#299cdb" },
+    { label: "Pending Amount", value: formatCurrency(data.pendingAmount), delta: "N/A", trend: "down", spark: "bar", color: "#f7b84b" },
   ];
 
-  const colorsArray = ["#5156be", "#299cdb", "#0ab39c", "#f7b84b", "#7e3af2"];
-  
-  const totalTopQty = data.topProducts.reduce((sum, p) => sum + parseFloat(p.totalQty), 0) || 1;
+  const totalTopQty = data.topProducts?.reduce((sum, p) => sum + parseFloat(p.totalQty), 0) || 1;
 
   const salesChartOptions = {
     chart: { toolbar: { show: false }, fontFamily: "inherit" },
     stroke: { width: [0, 0, 3], curve: "smooth" },
-    fill: {
-      type: ["solid", "gradient", "solid"],
-      gradient: { opacityFrom: 0.45, opacityTo: 0.05 },
-    },
+    fill: { type: ["solid", "gradient", "solid"], gradient: { opacityFrom: 0.45, opacityTo: 0.05 } },
     colors: ["#5156be", "#eef0f4", "#f7b84b"],
     plotOptions: { bar: { columnWidth: "45%", borderRadius: 3 } },
     dataLabels: { enabled: false },
-    legend: {
-      position: "bottom",
-      markers: { radius: 12 },
-      labels: { colors: "#7a7f9a" },
-    },
+    legend: { position: "bottom", markers: { radius: 12 }, labels: { colors: "#7a7f9a" } },
     grid: { borderColor: "#eef0f4", strokeDashArray: 4 },
-    xaxis: {
-      categories: data.chartData.months,
-      axisBorder: { show: false },
-      axisTicks: { show: false },
-      labels: { style: { colors: "#9aa0bb", fontSize: "12px" } },
-    },
-    yaxis: {
-      title: { text: "Amount (INR)", style: { color: "#9aa0bb" } },
-      labels: { 
-        style: { colors: "#9aa0bb" },
-        formatter: (value) => formatNumber(value)
-      },
-    },
-    tooltip: { 
-      shared: true,
-      y: {
-        formatter: (value) => formatNumber(value)
-      }
-    },
+    xaxis: { categories: data.chartData?.months || [], axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { colors: "#9aa0bb", fontSize: "12px" } } },
+    yaxis: { title: { text: "Amount (INR)", style: { color: "#9aa0bb" } }, labels: { style: { colors: "#9aa0bb" }, formatter: (value) => formatNumber(value) } },
+    tooltip: { shared: true, y: { formatter: (value) => formatNumber(value) } },
   };
 
   const salesChartSeries = [
-    { name: "Revenue", type: "column", data: data.chartData.revenue },
-    { name: "Collections", type: "area", data: data.chartData.collections },
-    { name: "Invoices", type: "line", data: data.chartData.invoices },
+    { name: "Revenue", type: "column", data: data.chartData?.revenue || [] },
+    { name: "Collections", type: "area", data: data.chartData?.collections || [] },
+    { name: "Invoices", type: "line", data: data.chartData?.invoices || [] },
   ];
 
-  const leadStatusEntries = Object.entries(data.leadStatusSummary);
+  const leadStatusEntries = Object.entries(data.leadStatusSummary || {});
 
   const rangeOptions = [
     { value: "today", label: "Today" },
@@ -214,7 +130,6 @@ const Dashboard = () => {
 
   return (
     <>
-      {/* Page header / breadcrumb */}
       <div className="mn-page-header">
         <h2 className="mn-page-title">Dashboard</h2>
         <div className="mn-breadcrumb">
@@ -224,7 +139,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Stat cards row */}
       <div className="row g-3 mn-row">
         {statCards.map((card) => (
           <div className="col-12 col-sm-6 col-xl-3" key={card.label}>
@@ -233,7 +147,6 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Sales analytics */}
       <div className="row g-3 mn-row">
         <div className="col-12 col-xl-8">
           <div className="mn-card mn-card--chart">
@@ -249,25 +162,20 @@ const Dashboard = () => {
 
             <div className="mn-chart-stats">
               <div className="mn-chart-stats__item">
-                <span className="mn-chart-stats__value mn-chart-stats__value--accent">{formatCurrency(data.chartData.revenue.reduce((a,b)=>a+b, 0))}</span>
+                <span className="mn-chart-stats__value mn-chart-stats__value--accent">{formatCurrency(data.chartData?.revenue?.reduce((a,b)=>a+b, 0))}</span>
                 <span className="mn-chart-stats__label">Total Income</span>
               </div>
               <div className="mn-chart-stats__item">
-                <span className="mn-chart-stats__value">{formatNumber(data.chartData.invoices.reduce((a,b)=>a+b, 0))}</span>
+                <span className="mn-chart-stats__value">{formatNumber(data.chartData?.invoices?.reduce((a,b)=>a+b, 0))}</span>
                 <span className="mn-chart-stats__label">Sales</span>
               </div>
               <div className="mn-chart-stats__item">
-                <span className="mn-chart-stats__value">{formatCurrency(data.chartData.collections.reduce((a,b)=>a+b, 0))}</span>
+                <span className="mn-chart-stats__value">{formatCurrency(data.chartData?.collections?.reduce((a,b)=>a+b, 0))}</span>
                 <span className="mn-chart-stats__label">Collections</span>
               </div>
             </div>
 
-            <Chart
-              options={salesChartOptions}
-              series={salesChartSeries}
-              type="line"
-              height={330}
-            />
+            <Chart options={salesChartOptions} series={salesChartSeries} type="line" height={330} />
           </div>
         </div>
 
@@ -288,7 +196,7 @@ const Dashboard = () => {
             </div>
 
             <ul className="mn-top-products__list">
-              {data.topProducts.map((p, index) => {
+              {data.topProducts?.map((p, index) => {
                 const color = colorsArray[index % colorsArray.length];
                 const percent = Math.min(100, Math.round((p.totalQty / totalTopQty) * 100));
                 return (
@@ -296,14 +204,11 @@ const Dashboard = () => {
                   <span className="mn-top-products__dot" style={{ background: color }} />
                   <span className="mn-top-products__name">{p.name} ({formatNumber(p.totalQty)})</span>
                   <span className="mn-top-products__bar">
-                    <span
-                      className="mn-top-products__bar-fill"
-                      style={{ width: `${percent}%`, background: color }}
-                    />
+                    <span className="mn-top-products__bar-fill" style={{ width: `${percent}%`, background: color }} />
                   </span>
                 </li>
               )})}
-              {data.topProducts.length === 0 && (
+              {!data.topProducts?.length && (
                 <li className="mn-top-products__item">
                   <span className="mn-top-products__name">0 products sold</span>
                 </li>
@@ -313,7 +218,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Bottom row: Top Users / Recent Activity / Social Source */}
       <div className="row g-3 mn-row">
         <div className="col-12 col-xl-4">
           <div className="mn-card">
@@ -328,13 +232,9 @@ const Dashboard = () => {
               </div>
             </div>
             <ul className="mn-simple-list">
-              {data.latestCustomers.map((c, i) => (
+              {data.latestCustomers?.map((c, i) => (
                 <li key={i} className="mn-simple-list__item">
-                  <img
-                    className="mn-simple-list__avatar"
-                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=random`}
-                    alt={c.name}
-                  />
+                  <img className="mn-simple-list__avatar" src={`https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=random`} alt={c.name} />
                   <div className="mn-simple-list__body">
                     <span className="mn-simple-list__title">{c.name}</span>
                     <span className="mn-simple-list__sub">{c.company || "N/A"}</span>
@@ -342,9 +242,7 @@ const Dashboard = () => {
                   <span className="mn-simple-list__amount" style={{fontSize: "12px", color: "#9aa0bb"}}>{c.city}</span>
                 </li>
               ))}
-              {data.latestCustomers.length === 0 && (
-                <div style={{padding: "1rem"}}>0 customers found</div>
-              )}
+              {!data.latestCustomers?.length && <div style={{padding: "1rem"}}>0 customers found</div>}
             </ul>
           </div>
         </div>
@@ -365,7 +263,7 @@ const Dashboard = () => {
               </div>
             </div>
             <ul className="mn-timeline" style={{ maxHeight: "350px", overflowY: "auto" }}>
-              {data.recentActivities.map((a, i) => (
+              {data.recentActivities?.map((a, i) => (
                 <li key={i} className="mn-timeline__item">
                   <span className="mn-timeline__dot" />
                   <div className="mn-timeline__body">
@@ -375,9 +273,7 @@ const Dashboard = () => {
                   <FiMoreVertical className="mn-timeline__more" size={14} />
                 </li>
               ))}
-              {data.recentActivities.length === 0 && (
-                <div style={{padding: "1rem"}}>0 activities found</div>
-              )}
+              {!data.recentActivities?.length && <div style={{padding: "1rem"}}>0 activities found</div>}
             </ul>
           </div>
         </div>
@@ -400,10 +296,7 @@ const Dashboard = () => {
                 const color = colorsArray[index % colorsArray.length];
                 return (
                 <li key={statusName} className="mn-simple-list__item">
-                  <span
-                    className="mn-simple-list__swatch"
-                    style={{ background: color }}
-                  />
+                  <span className="mn-simple-list__swatch" style={{ background: color }} />
                   <div className="mn-simple-list__body">
                     <span className="mn-simple-list__title">{statusName}</span>
                   </div>
@@ -415,6 +308,163 @@ const Dashboard = () => {
         </div>
       </div>
     </>
+  );
+};
+
+/* ---------------------------------------------------------------------- */
+/*  SuperAdminDashboard                                                    */
+/* ---------------------------------------------------------------------- */
+
+const SuperAdminDashboard = ({ data }) => {
+  const statCards = [
+    { label: "Total Companies", value: formatNumber(data.totalCompanies), delta: "N/A", trend: "up", spark: "bar", color: "#5156be" },
+    { label: "Active Companies", value: formatNumber(data.activeCompanies), delta: "N/A", trend: "up", spark: "radial", color: "#0ab39c" },
+    { label: "Inactive Companies", value: formatNumber(data.inactiveCompanies), delta: "N/A", trend: "down", spark: "radial", color: "#f7b84b" },
+    { label: "Total Users", value: formatNumber(data.totalUsers), delta: "N/A", trend: "up", spark: "bar", color: "#299cdb" },
+  ];
+
+  const growthChartOptions = {
+    chart: { toolbar: { show: false }, fontFamily: "inherit" },
+    stroke: { width: [3], curve: "smooth" },
+    fill: { type: ["gradient"], gradient: { opacityFrom: 0.45, opacityTo: 0.05 } },
+    colors: ["#5156be"],
+    dataLabels: { enabled: false },
+    legend: { position: "bottom" },
+    grid: { borderColor: "#eef0f4", strokeDashArray: 4 },
+    xaxis: { categories: data.chartData?.months || [], axisBorder: { show: false }, axisTicks: { show: false } },
+    yaxis: { title: { text: "New Registrations" } },
+    tooltip: { shared: true },
+  };
+
+  const growthChartSeries = [
+    { name: "New Companies", type: "area", data: data.chartData?.newCompanies || [] },
+  ];
+
+  return (
+    <>
+      <div className="mn-page-header">
+        <h2 className="mn-page-title">Platform Dashboard</h2>
+        <div className="mn-breadcrumb">
+          <span>Platform</span>
+          <span className="mn-breadcrumb__sep">/</span>
+          <span className="mn-breadcrumb__current">Overview</span>
+        </div>
+      </div>
+
+      <div className="row g-3 mn-row">
+        {statCards.map((card) => (
+          <div className="col-12 col-sm-6 col-xl-3" key={card.label}>
+            <StatCard card={card} />
+          </div>
+        ))}
+      </div>
+
+      <div className="row g-3 mn-row">
+        <div className="col-12 col-xl-8">
+          <div className="mn-card mn-card--chart">
+            <div className="mn-card__header">
+              <h3 className="mn-card__title">Platform Analytics (Registrations)</h3>
+            </div>
+            <div className="mn-chart-stats">
+              <div className="mn-chart-stats__item">
+                <span className="mn-chart-stats__value mn-chart-stats__value--accent">{formatNumber(data.newCompanies)}</span>
+                <span className="mn-chart-stats__label">New Last 30 Days</span>
+              </div>
+            </div>
+            <Chart options={growthChartOptions} series={growthChartSeries} type="area" height={330} />
+          </div>
+        </div>
+
+        <div className="col-12 col-xl-4">
+          <div className="mn-card">
+            <div className="mn-card__header">
+              <h3 className="mn-card__title">Recent Companies</h3>
+            </div>
+            <ul className="mn-simple-list">
+              {data.recentCompanies?.map((c, i) => (
+                <li key={i} className="mn-simple-list__item">
+                  <div className="mn-simple-list__body">
+                    <span className="mn-simple-list__title">{c.company_name}</span>
+                    <span className="mn-simple-list__sub">{c.company_code}</span>
+                  </div>
+                  <span className={`mn-badge ${c.status === 'Active' ? 'mn-badge--success' : 'mn-badge--warning'}`}>
+                    {c.status}
+                  </span>
+                </li>
+              ))}
+              {!data.recentCompanies?.length && <div style={{padding: "1rem"}}>No recent companies</div>}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+/* ---------------------------------------------------------------------- */
+/*  Main Dashboard Wrapper                                                 */
+/* ---------------------------------------------------------------------- */
+
+const Dashboard = () => {
+  const [range, setRange] = useState("year");
+  const [productsRange, setProductsRange] = useState("overall");
+  const [customersRange, setCustomersRange] = useState("recent");
+  const [activityType, setActivityType] = useState("system");
+  const [leadRange, setLeadRange] = useState("year");
+
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        let isSuperAdmin = false;
+        const userStr = localStorage.getItem("user");
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          if (user.role === "SuperAdmin" && user.impersonation !== true) {
+            isSuperAdmin = true;
+          }
+        }
+
+        const endpoint = isSuperAdmin ? "/dashboard/superadmin" : "/dashboard";
+
+        const response = await apiClient.get(endpoint, {
+          params: { range, productsRange, customersRange, activityType, leadRange }
+        });
+
+        if (isSuperAdmin) {
+          const payload = response.data.data || response.data;
+          setData({ ...payload, superAdmin: true });
+        } else {
+          setData(response.data);
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboardData();
+  }, [range, productsRange, customersRange, activityType, leadRange]);
+
+  if (loading || !data) {
+    return <div style={{ padding: "2rem" }}>Loading dashboard data...</div>;
+  }
+
+  if (data.superAdmin) {
+    return <SuperAdminDashboard data={data} />;
+  }
+
+  return (
+    <CompanyDashboard 
+      data={data}
+      range={range} setRange={setRange}
+      productsRange={productsRange} setProductsRange={setProductsRange}
+      customersRange={customersRange} setCustomersRange={setCustomersRange}
+      activityType={activityType} setActivityType={setActivityType}
+      leadRange={leadRange} setLeadRange={setLeadRange}
+    />
   );
 };
 

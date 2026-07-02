@@ -44,8 +44,7 @@ export default function QuotationCreate() {
     quotation_date: new Date().toISOString().split("T")[0],
     customer_id: "",
     bank_id: "",
-    terms_id: "",
-    notes: ""
+    terms_id: ""
   });
 
   const [items, setItems] = useState([
@@ -72,7 +71,28 @@ export default function QuotationCreate() {
       ]);
       setCustomers(resCust.data || []);
       setBanks(resBank.data || []);
-      setTerms(resTerms.data || []);
+      const termsData = resTerms.data || [];
+      setTerms(termsData);
+      
+      // Auto-select terms if creating new quotation
+      if (!isEditMode) {
+        let selectedTermsId = "";
+        const defaultTerms = termsData.filter(t => t.is_default);
+        if (defaultTerms.length > 0) {
+          if (defaultTerms.length > 1) {
+            console.warn("Multiple default terms found. Selecting the latest one.");
+          }
+          selectedTermsId = defaultTerms[0].id;
+        } else if (termsData.length > 0) {
+          selectedTermsId = termsData[0].id;
+        }
+        
+        setHeader(prev => ({
+          ...prev,
+          terms_id: prev.terms_id || String(selectedTermsId)
+        }));
+      }
+
       if (resCompany.data && resCompany.data.profile) {
         setCompanyInfo(resCompany.data.profile);
       }
@@ -171,8 +191,7 @@ export default function QuotationCreate() {
       quotation_date: new Date().toISOString().split("T")[0],
       customer_id: "",
       bank_id: "",
-      terms_id: "",
-      notes: ""
+      terms_id: ""
     });
     setItems([{ service_name: "", description: "", qty: 1, rate: "", gst_percent: 18, amount: 0 }]);
     await fetchNextQuotationNumber();
@@ -249,8 +268,7 @@ export default function QuotationCreate() {
           quotation_date: new Date(qtnHeader.quotation_date).toISOString().split("T")[0],
           customer_id: qtnHeader.customer_id || "",
           bank_id: qtnHeader.bank_id || "",
-          terms_id: qtnHeader.terms_id || "",
-          notes: qtnHeader.notes || ""
+          terms_id: qtnHeader.terms_id || ""
         });
 
         if (qtnItems.length > 0) {
@@ -531,11 +549,7 @@ export default function QuotationCreate() {
             {/* BOTTOM SECTION: NOTES & TOTALS GRID */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px", marginBottom: "24px" }}>
 
-              {/* Notes Card */}
-              <div style={{ backgroundColor: "#fff", borderRadius: "8px", border: "1px solid #e5e7eb", padding: "24px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
-                <label style={labelStyle}>Notes & Remarks</label>
-                <textarea name="notes" rows="4" value={header.notes} onChange={handleHeaderChange} placeholder="Provide any additional comments or instructions..." style={{ ...inputStyle, resize: "none", height: "100px", lineHeight: "1.5" }} />
-              </div>
+              {/* Notes Card Removed */}
 
               {/* Totals Panel Card */}
               <div style={{ backgroundColor: "#fff", borderRadius: "8px", border: "1px solid #e5e7eb", padding: "24px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>

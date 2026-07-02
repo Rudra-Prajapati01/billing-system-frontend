@@ -14,12 +14,6 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }
-
-    const selectedCompanyId = localStorage.getItem("selectedCompanyId");
-    if (selectedCompanyId) {
-      config.headers["X-Company-Id"] = selectedCompanyId;
-    }
-
     return config;
   },
   (error) => Promise.reject(error)

@@ -43,8 +43,7 @@ export default function InvoiceCreate() {
     invoice_date: new Date().toISOString().split("T")[0],
     customer_id: "",
     bank_id: "",
-    terms_id: "",
-    notes: ""
+    terms_id: ""
   });
 
   const [items, setItems] = useState([
@@ -69,7 +68,28 @@ export default function InvoiceCreate() {
       ]);
       setCustomers(resCust.data || []);
       setBanks(resBank.data || []);
-      setTerms(resTerms.data || []);
+      const termsData = resTerms.data || [];
+      setTerms(termsData);
+      
+      // Auto-select terms if creating new invoice
+      if (!isEditMode) {
+        let selectedTermsId = "";
+        const defaultTerms = termsData.filter(t => t.is_default);
+        if (defaultTerms.length > 0) {
+          if (defaultTerms.length > 1) {
+            console.warn("Multiple default terms found. Selecting the latest one.");
+          }
+          selectedTermsId = defaultTerms[0].id;
+        } else if (termsData.length > 0) {
+          selectedTermsId = termsData[0].id;
+        }
+        
+        setHeader(prev => ({
+          ...prev,
+          terms_id: prev.terms_id || String(selectedTermsId)
+        }));
+      }
+
       if (resCompany.data && resCompany.data.profile) setCompanyInfo(resCompany.data.profile);
     } catch (err) {
       setError("Failed to load options for customers, banks, terms or company profile.");
@@ -149,7 +169,7 @@ export default function InvoiceCreate() {
   const resetForm = async () => {
     setIsEditMode(false);
     setEditInvoiceId(null);
-    setHeader({ invoice_no: "", invoice_date: new Date().toISOString().split("T")[0], customer_id: "", bank_id: "", terms_id: "", notes: "" });
+    setHeader({ invoice_no: "", invoice_date: new Date().toISOString().split("T")[0], customer_id: "", bank_id: "", terms_id: "" });
     setItems([{ service_name: "", description: "", rate: "", qty: 1, gst_percent: 18, amount: 0 }]);
     await fetchNextInvoiceNumber();
   };
@@ -202,8 +222,7 @@ export default function InvoiceCreate() {
           invoice_date: new Date(invHeader.invoice_date).toISOString().split("T")[0],
           customer_id: invHeader.customer_id || "",
           bank_id: invHeader.bank_id || "",
-          terms_id: invHeader.terms_id || "",
-          notes: invHeader.notes || ""
+          terms_id: invHeader.terms_id || ""
         });
         if (invItems.length > 0) {
           setItems(invItems.map(item => ({
@@ -394,10 +413,7 @@ export default function InvoiceCreate() {
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px", marginBottom: "24px" }}>
-              <div style={{ backgroundColor: "#fff", borderRadius: "8px", border: "1px solid #e5e7eb", padding: "24px" }}>
-                <label style={labelStyle}>Notes & Remarks</label>
-                <textarea name="notes" value={header.notes} onChange={handleHeaderChange} style={{ ...inputStyle, height: "100px" }} />
-              </div>
+              {/* Notes Card Removed */}
               <div style={{ backgroundColor: "#fff", borderRadius: "8px", border: "1px solid #e5e7eb", padding: "24px" }}>
                 <h4 style={{ margin: "0 0 16px 0", borderBottom: "1px solid #e5e7eb", paddingBottom: "8px" }}>Summary</h4>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px" }}><span>Subtotal:</span><span style={{ fontWeight: "600" }}>{totals.subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>

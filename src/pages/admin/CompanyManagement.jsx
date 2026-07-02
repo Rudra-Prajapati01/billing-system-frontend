@@ -168,6 +168,7 @@ export default function CompanyManagement() {
     }
   };
 
+
   return (
     <div style={styles.container}>
       <style>{hoverStyles}</style>
@@ -243,6 +244,7 @@ export default function CompanyManagement() {
                   <th style={styles.th}>Code</th>
                   <th style={styles.th}>Contact Person</th>
                   <th style={styles.th}>Email / Mobile</th>
+                  <th style={styles.th}>Users</th>
                   <th style={styles.th}>Status</th>
                   <th style={{ ...styles.th, textAlign: "center" }}>Actions</th>
                 </tr>
@@ -261,6 +263,11 @@ export default function CompanyManagement() {
                       <div style={{ fontSize: "11px", color: "#74788d" }}>{c.mobile || "-"}</div>
                     </td>
                     <td style={styles.td}>
+                      <span style={{ fontWeight: "600", color: "#4f46e5", backgroundColor: "#e0e7ff", padding: "2px 8px", borderRadius: "12px" }}>
+                        {c.total_users || 0}
+                      </span>
+                    </td>
+                    <td style={styles.td}>
                       <span
                         style={{
                           ...styles.statusBadge,
@@ -271,7 +278,29 @@ export default function CompanyManagement() {
                         {c.status}
                       </span>
                     </td>
-                    <td style={{ ...styles.td, textAlign: "center" }}>
+                    <td style={{ ...styles.td, textAlign: "center", display: "flex", justifyContent: "center", gap: "8px" }}>
+                      
+                      <button
+                        onClick={async () => {
+                          try {
+                            const res = await apiClient.post("/auth/impersonate", { company_id: c.id });
+                            if (res.data.success) {
+                              localStorage.setItem("token", res.data.token);
+                              localStorage.setItem("user", JSON.stringify(res.data.user));
+                              window.location.href = "/dashboard";
+                            }
+                          } catch (error) {
+                            console.error("Failed to impersonate:", error);
+                            alert("Failed to login as this company.");
+                          }
+                        }}
+                        title="Login As Company"
+                        style={{ ...styles.actionIconBtn, backgroundColor: "#fef3c7" }}
+                        className="icon-btn"
+                      >
+                        <span style={{ fontSize: "11px", fontWeight: "600", color: "#d97706" }}>Login As</span>
+                      </button>
+
                       <button
                         onClick={() => handleOpenEditModal(c)}
                         title="Edit Company"

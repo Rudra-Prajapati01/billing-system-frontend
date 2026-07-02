@@ -37,39 +37,6 @@ const Navbar = ({ onToggleSidebar }) => {
     }
   }
 
-  const [activeCompanies, setActiveCompanies] = useState([]);
-  const [selectedCompanyId, setSelectedCompanyId] = useState(
-    localStorage.getItem("selectedCompanyId") || ""
-  );
-
-  useEffect(() => {
-    if (role === "SuperAdmin") {
-      const fetchCompanies = async () => {
-        try {
-          const response = await apiClient.get("/tenant-companies?limit=1000");
-          if (response.data.success) {
-            setActiveCompanies(response.data.data.filter(c => c.status === "Active"));
-          }
-        } catch (err) {
-          console.error("Navbar fetch companies error:", err);
-        }
-      };
-      fetchCompanies();
-    }
-  }, [role]);
-
-  const handleCompanySwitch = (e) => {
-    const val = e.target.value;
-    setSelectedCompanyId(val);
-    if (val) {
-      localStorage.setItem("selectedCompanyId", val);
-    } else {
-      localStorage.removeItem("selectedCompanyId");
-    }
-    // Reload to refresh data with new header context
-    window.location.reload();
-  };
-
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -106,46 +73,38 @@ const Navbar = ({ onToggleSidebar }) => {
       </div>
 
       <div className="mn-navbar__right">
-        {role === "SuperAdmin" ? (
-          <div style={{ marginRight: "16px", display: "flex", alignItems: "center" }}>
-            <span style={{ fontSize: "12px", color: "#74788d", marginRight: "8px", fontWeight: "500" }}>Context:</span>
-            <select
-              value={selectedCompanyId}
-              onChange={handleCompanySwitch}
-              style={{
-                padding: "6px 24px 6px 12px",
-                fontSize: "13px",
-                border: "1px solid #e8ecf0",
-                borderRadius: "6px",
-                backgroundColor: "#f8f9fa",
-                color: "#495057",
-                outline: "none",
-                cursor: "pointer",
-                appearance: "auto"
+        {userStr && JSON.parse(userStr).impersonation === true ? (
+          <div style={{ marginRight: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ backgroundColor: "#ffebd6", color: "#d97706", padding: "4px 10px", borderRadius: "4px", fontSize: "12px", fontWeight: "600" }}>
+              Viewing As: {companyName}
+            </span>
+            <button 
+              onClick={async () => {
+                try {
+                  const res = await apiClient.post("/auth/exit-impersonation");
+                  if (res.data.success) {
+                    localStorage.setItem("token", res.data.token);
+                    localStorage.setItem("user", JSON.stringify(res.data.user));
+                    window.location.href = "/dashboard";
+                  }
+                } catch (error) {
+                  console.error("Failed to exit impersonation:", error);
+                  alert("Error exiting impersonation mode.");
+                }
               }}
-            >
-              <option value="">All Companies</option>
-              {activeCompanies.map(c => (
-                <option key={c.id} value={c.id}>{c.company_name}</option>
-              ))}
-            </select>
-          </div>
-        ) : (
-          companyName && (
-            <div style={{ marginRight: "16px", display: "flex", alignItems: "center" }}>
-              <span style={{
-                backgroundColor: "#eef2ff",
-                color: "#4f46e5",
-                padding: "4px 10px",
-                borderRadius: "4px",
-                fontSize: "12px",
-                fontWeight: "600"
+              style={{
+                backgroundColor: "#dc2626", color: "white", padding: "4px 10px", borderRadius: "4px", fontSize: "12px", fontWeight: "600", border: "none", cursor: "pointer"
               }}>
-                {companyName}
-              </span>
-            </div>
-          )
-        )}
+              Exit Impersonation
+            </button>
+          </div>
+        ) : companyName && role !== "SuperAdmin" ? (
+          <div style={{ marginRight: "16px", display: "flex", alignItems: "center" }}>
+            <span style={{ backgroundColor: "#eef2ff", color: "#4f46e5", padding: "4px 10px", borderRadius: "4px", fontSize: "12px", fontWeight: "600" }}>
+              {companyName}
+            </span>
+          </div>
+        ) : null}
 
         <button className="mn-navbar__icon-btn mn-navbar__flag" aria-label="Language">
           <span className="mn-navbar__flag-emoji">🇺🇸</span>

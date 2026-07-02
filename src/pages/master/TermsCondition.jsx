@@ -22,7 +22,8 @@ export default function TermsCondition() {
   const [termForm, setTermForm] = useState({
     title: "",
     description: "",
-    status: "Active"
+    status: "Active",
+    is_default: false
   });
 
   // Load terms list on mount
@@ -56,7 +57,8 @@ export default function TermsCondition() {
     setTermForm({
       title: "",
       description: "",
-      status: "Active"
+      status: "Active",
+      is_default: false
     });
     setSelectedTermId(null);
   };
@@ -121,7 +123,8 @@ export default function TermsCondition() {
     setTermForm({
       title: row.title || "",
       description: row.description || "",
-      status: row.status || "Active"
+      status: row.status || "Active",
+      is_default: !!row.is_default
     });
     setError(null);
     setSuccess(null);
@@ -338,6 +341,20 @@ export default function TermsCondition() {
                         }}>
                           {row.status || "Active"}
                         </span>
+                        {row.is_default && (
+                          <span style={{
+                            display: "block",
+                            marginTop: "4px",
+                            padding: "2px 4px",
+                            borderRadius: "4px",
+                            fontSize: "10px",
+                            backgroundColor: "#eef2ff",
+                            color: "#5156be",
+                            border: "1px solid #e0e2f5"
+                          }}>
+                            Default
+                          </span>
+                        )}
                       </td>
                       <td style={{ padding: "14px 16px", color: "#74788d", verticalAlign: "top" }}>
                         {row.created_at ? new Date(row.created_at).toLocaleDateString() : "-"}
@@ -492,6 +509,20 @@ export default function TermsCondition() {
                 <option value="Active">Active</option>
                 <option value="Inactive">Inactive</option>
               </select>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "16px" }}>
+                <input
+                  type="checkbox"
+                  id="is_default"
+                  name="is_default"
+                  checked={termForm.is_default}
+                  onChange={(e) => setTermForm(prev => ({ ...prev, is_default: e.target.checked }))}
+                  style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                />
+                <label htmlFor="is_default" style={{ fontSize: "13px", fontWeight: "600", color: "#495057", cursor: "pointer", margin: 0 }}>
+                  Mark as Default Terms
+                </label>
+              </div>
             </div>
 
             {/* FOOTER ACTIONS */}

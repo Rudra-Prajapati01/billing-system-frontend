@@ -36,10 +36,7 @@ export default function UserManagement() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("CompanyAdmin");
   const [status, setStatus] = useState("Active");
-  const [companyId, setCompanyId] = useState("");
 
-  // Companies for dropdown (SuperAdmin)
-  const [activeCompanies, setActiveCompanies] = useState([]);
 
   // Password Reset Modal State
   const [resetModalOpen, setResetModalOpen] = useState(false);
@@ -57,26 +54,12 @@ export default function UserManagement() {
   const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
 
   useEffect(() => {
-    if (!token || (currentUser && currentUser.role !== "SuperAdmin")) {
+    if (!token || (currentUser && currentUser.role === "Staff")) {
       navigate("/dashboard");
       return;
     }
     fetchUsers();
-    fetchCompanies();
   }, [page, search]);
-
-  const fetchCompanies = async () => {
-    try {
-      const response = await apiClient.get(`/tenant-companies?limit=1000`);
-      if (response.data.success) {
-        // Filter to only active companies for the dropdown
-        const active = response.data.data.filter(c => c.status === "Active");
-        setActiveCompanies(active);
-      }
-    } catch (err) {
-      console.error("Fetch companies error:", err);
-    }
-  };
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -117,7 +100,6 @@ export default function UserManagement() {
     setPassword("");
     setRole("CompanyAdmin");
     setStatus("Active");
-    setCompanyId("");
     setError("");
     setSuccess("");
     setFormOpen(true);
@@ -131,7 +113,6 @@ export default function UserManagement() {
     setPassword(""); // Leave blank in edit mode
     setRole(user.role);
     setStatus(user.status);
-    setCompanyId(user.company_id || "");
     setError("");
     setSuccess("");
     setFormOpen(true);
@@ -155,10 +136,7 @@ export default function UserManagement() {
       return;
     }
 
-    if (role !== "SuperAdmin" && !companyId) {
-      setError("Company is required for CompanyAdmin and Staff roles.");
-      return;
-    }
+
 
     if (!isEditMode && !password.trim()) {
       setError("Password is required for new users.");
@@ -172,7 +150,7 @@ export default function UserManagement() {
         // Edit User
         const response = await apiClient.put(
           `/users/${selectedUserId}`,
-          { name, role, status, company_id: companyId || null }
+          { name, role, status }
         );
         if (response.data.success) {
           setSuccess("User profile updated successfully!");
@@ -185,7 +163,7 @@ export default function UserManagement() {
         // Create User
         const response = await apiClient.post(
           "/users",
-          { name, username, password, role, status, company_id: companyId || null }
+          { name, username, password, role, status }
         );
         if (response.data.success) {
           setSuccess("User created successfully!");
@@ -336,7 +314,6 @@ export default function UserManagement() {
                   <th style={styles.th}>ID</th>
                   <th style={styles.th}>Name</th>
                   <th style={styles.th}>Username</th>
-                  <th style={styles.th}>Company</th>
                   <th style={styles.th}>Role</th>
                   <th style={styles.th}>Status</th>
                   <th style={styles.th}>Created Date</th>
@@ -351,13 +328,6 @@ export default function UserManagement() {
                       <div style={{ fontWeight: "600", color: "#212529" }}>{u.name}</div>
                     </td>
                     <td style={styles.td}>{u.username}</td>
-                    <td style={styles.td}>
-                      {u.company_name ? (
-                        <div style={{ fontWeight: "500" }}>{u.company_name}</div>
-                      ) : (
-                        <span style={{ color: "#adb5bd" }}>N/A</span>
-                      )}
-                    </td>
                     <td style={styles.td}>
                       <span
                         style={{
@@ -532,35 +502,12 @@ export default function UserManagement() {
                     <label style={styles.formLabel}>User Role *</label>
                     <select
                       value={role}
-                      onChange={(e) => {
-                        setRole(e.target.value);
-                        if (e.target.value === "SuperAdmin") setCompanyId("");
-                      }}
+                      onChange={(e) => setRole(e.target.value)}
                       style={styles.modalSelect}
                     >
-                      <option value="SuperAdmin">SuperAdmin</option>
                       <option value="CompanyAdmin">CompanyAdmin</option>
                       <option value="Staff">Staff</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style={styles.formLabel}>
-                      Company {role !== "SuperAdmin" && "*"}
-                    </label>
-                    <select
-                      value={companyId}
-                      onChange={(e) => setCompanyId(e.target.value)}
-                      disabled={role === "SuperAdmin"}
-                      style={{
-                        ...styles.modalSelect,
-                        backgroundColor: role === "SuperAdmin" ? "#e9ecef" : "#ffffff"
-                      }}
-                    >
-                      <option value="">Select Company</option>
-                      {activeCompanies.map(c => (
-                        <option key={c.id} value={c.id}>{c.company_name} {c.company_code ? `(${c.company_code})` : ''}</option>
-                      ))}
+                      {currentUser?.role === "SuperAdmin" && <option value="SuperAdmin">SuperAdmin</option>}
                     </select>
                   </div>
 
