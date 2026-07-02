@@ -321,29 +321,34 @@ const SuperAdminDashboard = ({ data }) => {
     { label: "Active Companies", value: formatNumber(data.activeCompanies), delta: "N/A", trend: "up", spark: "radial", color: "#0ab39c" },
     { label: "Inactive Companies", value: formatNumber(data.inactiveCompanies), delta: "N/A", trend: "down", spark: "radial", color: "#f7b84b" },
     { label: "Total Users", value: formatNumber(data.totalUsers), delta: "N/A", trend: "up", spark: "bar", color: "#299cdb" },
+    { label: "Active Users", value: formatNumber(data.activeUsers), delta: "N/A", trend: "up", spark: "radial", color: "#0ab39c" },
+    { label: "Inactive Users", value: formatNumber(data.inactiveUsers), delta: "N/A", trend: "down", spark: "radial", color: "#f7b84b" },
+    { label: "New Companies (30d)", value: formatNumber(data.newCompanies), delta: "N/A", trend: "up", spark: "bar", color: "#7e3af2" },
+    { label: "New Users (30d)", value: formatNumber(data.newUsers), delta: "N/A", trend: "up", spark: "bar", color: "#299cdb" },
   ];
 
   const growthChartOptions = {
     chart: { toolbar: { show: false }, fontFamily: "inherit" },
-    stroke: { width: [3], curve: "smooth" },
-    fill: { type: ["gradient"], gradient: { opacityFrom: 0.45, opacityTo: 0.05 } },
-    colors: ["#5156be"],
+    stroke: { width: [3, 3], curve: "smooth" },
+    fill: { type: ["gradient", "gradient"], gradient: { opacityFrom: 0.45, opacityTo: 0.05 } },
+    colors: ["#5156be", "#0ab39c"],
     dataLabels: { enabled: false },
     legend: { position: "bottom" },
     grid: { borderColor: "#eef0f4", strokeDashArray: 4 },
     xaxis: { categories: data.chartData?.months || [], axisBorder: { show: false }, axisTicks: { show: false } },
-    yaxis: { title: { text: "New Registrations" } },
+    yaxis: { title: { text: "Registrations" } },
     tooltip: { shared: true },
   };
 
   const growthChartSeries = [
     { name: "New Companies", type: "area", data: data.chartData?.newCompanies || [] },
+    { name: "New Users", type: "area", data: data.chartData?.newUsers || [] },
   ];
 
   return (
     <>
       <div className="mn-page-header">
-        <h2 className="mn-page-title">Platform Dashboard</h2>
+        <h2 className="mn-page-title">Platform Overview</h2>
         <div className="mn-breadcrumb">
           <span>Platform</span>
           <span className="mn-breadcrumb__sep">/</span>
@@ -363,13 +368,7 @@ const SuperAdminDashboard = ({ data }) => {
         <div className="col-12 col-xl-8">
           <div className="mn-card mn-card--chart">
             <div className="mn-card__header">
-              <h3 className="mn-card__title">Platform Analytics (Registrations)</h3>
-            </div>
-            <div className="mn-chart-stats">
-              <div className="mn-chart-stats__item">
-                <span className="mn-chart-stats__value mn-chart-stats__value--accent">{formatNumber(data.newCompanies)}</span>
-                <span className="mn-chart-stats__label">New Last 30 Days</span>
-              </div>
+              <h3 className="mn-card__title">Platform Analytics (Growth)</h3>
             </div>
             <Chart options={growthChartOptions} series={growthChartSeries} type="area" height={330} />
           </div>
@@ -378,7 +377,49 @@ const SuperAdminDashboard = ({ data }) => {
         <div className="col-12 col-xl-4">
           <div className="mn-card">
             <div className="mn-card__header">
-              <h3 className="mn-card__title">Recent Companies</h3>
+              <h3 className="mn-card__title">Platform Status</h3>
+            </div>
+            <ul className="mn-simple-list">
+              <li className="mn-simple-list__item">
+                <div className="mn-simple-list__body">
+                  <span className="mn-simple-list__title">Total Companies</span>
+                </div>
+                <span className="mn-simple-list__amount">{formatNumber(data.totalCompanies)}</span>
+              </li>
+              <li className="mn-simple-list__item">
+                <div className="mn-simple-list__body">
+                  <span className="mn-simple-list__title">Total Users</span>
+                </div>
+                <span className="mn-simple-list__amount">{formatNumber(data.totalUsers)}</span>
+              </li>
+              <li className="mn-simple-list__item">
+                <div className="mn-simple-list__body">
+                  <span className="mn-simple-list__title">Active Sessions</span>
+                </div>
+                <span className="mn-simple-list__amount">{formatNumber(data.activeUsers)}</span>
+              </li>
+              <li className="mn-simple-list__item">
+                <div className="mn-simple-list__body">
+                  <span className="mn-simple-list__title">System Status</span>
+                </div>
+                <span className="mn-badge mn-badge--success">Online</span>
+              </li>
+              <li className="mn-simple-list__item">
+                <div className="mn-simple-list__body">
+                  <span className="mn-simple-list__title">Database Status</span>
+                </div>
+                <span className="mn-badge mn-badge--success">Connected</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div className="row g-3 mn-row">
+        <div className="col-12 col-xl-6">
+          <div className="mn-card">
+            <div className="mn-card__header">
+              <h3 className="mn-card__title">Recently Registered Companies</h3>
             </div>
             <ul className="mn-simple-list">
               {data.recentCompanies?.map((c, i) => (
@@ -393,6 +434,28 @@ const SuperAdminDashboard = ({ data }) => {
                 </li>
               ))}
               {!data.recentCompanies?.length && <div style={{padding: "1rem"}}>No recent companies</div>}
+            </ul>
+          </div>
+        </div>
+
+        <div className="col-12 col-xl-6">
+          <div className="mn-card">
+            <div className="mn-card__header">
+              <h3 className="mn-card__title">Recently Created Users</h3>
+            </div>
+            <ul className="mn-simple-list">
+              {data.recentUsers?.map((u, i) => (
+                <li key={i} className="mn-simple-list__item">
+                  <div className="mn-simple-list__body">
+                    <span className="mn-simple-list__title">{u.name}</span>
+                    <span className="mn-simple-list__sub">{u.username} • {u.company_name || "Platform"}</span>
+                  </div>
+                  <span className="mn-badge mn-badge--info">
+                    {u.role}
+                  </span>
+                </li>
+              ))}
+              {!data.recentUsers?.length && <div style={{padding: "1rem"}}>No recent users</div>}
             </ul>
           </div>
         </div>
@@ -419,7 +482,7 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
       try {
         let isSuperAdmin = false;
-        const userStr = localStorage.getItem("user");
+        const userStr = localStorage.getItem("user") || sessionStorage.getItem("user");
         if (userStr) {
           const user = JSON.parse(userStr);
           if (user.role === "SuperAdmin" && user.impersonation !== true) {
